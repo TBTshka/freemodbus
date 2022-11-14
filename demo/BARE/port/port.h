@@ -24,13 +24,15 @@
 
 #include <assert.h>
 #include <inttypes.h>
-
+#include "mt_port.h"
 #define	INLINE                      inline
 #define PR_BEGIN_EXTERN_C           extern "C" {
 #define	PR_END_EXTERN_C             }
 
-#define ENTER_CRITICAL_SECTION( )   
-#define EXIT_CRITICAL_SECTION( )    
+#define ENTER_CRITICAL_SECTION( )   EnterCriticalSection()//taskENTER_CRITICAL()
+#define EXIT_CRITICAL_SECTION( )    ExitCriticalSection()//taskEXIT_CRITICAL()
+
+
 
 typedef uint8_t BOOL;
 

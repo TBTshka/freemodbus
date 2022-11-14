@@ -30,7 +30,7 @@
 /* ----------------------- System includes ----------------------------------*/
 #include "stdlib.h"
 #include "string.h"
-
+#include <stdio.h>
 /* ----------------------- Platform includes --------------------------------*/
 #include "port.h"
 
@@ -61,6 +61,7 @@
 static UCHAR    ucMBAddress;
 static eMBMode  eMBCurrentMode;
 
+#define TERMO_REGULATOR_MB_ADDR 0x05 
 static enum
 {
     STATE_ENABLED,
@@ -331,6 +332,7 @@ eMBErrorCode
 eMBPoll( void )
 {
     static UCHAR   *ucMBFrame;
+	static uint8_t *ucMBFrame_copy;
     static UCHAR    ucRcvAddress;
     static UCHAR    ucFunctionCode;
     static USHORT   usLength;
@@ -362,8 +364,27 @@ eMBPoll( void )
                 /* Check if the frame is for us. If not ignore the frame. */
                 if( ( ucRcvAddress == ucMBAddress ) || ( ucRcvAddress == MB_ADDRESS_BROADCAST ) )
                 {
+					printf("MB message recieved Length is %d, Data is: %X\r\n",usLength,ucRcvAddress);
+					uint16_t i =0;
+					ucMBFrame_copy = ucMBFrame;
+					for(i=0;i<usLength+2;i++) {
+						printf("%2X ",*ucMBFrame_copy);
+						ucMBFrame_copy++;
+					}
+					printf("\r\n");
                     ( void )xMBPortEventPost( EV_EXECUTE );
-                }
+                } else if(( ucRcvAddress == TERMO_REGULATOR_MB_ADDR )) 
+				{
+					printf("MB message for termoregulator recieved Length is %d, Data is: %X\r\n",usLength,ucRcvAddress);
+					uint16_t i =0;
+					ucMBFrame_copy = ucMBFrame;
+					for(i=0;i<usLength+2;i++) {
+						printf(" %X",*ucMBFrame_copy);
+						ucMBFrame_copy++;
+					}
+					printf("\r\n");
+					printf("Need to retranslate\r\n");
+				}
             }
             break;
 

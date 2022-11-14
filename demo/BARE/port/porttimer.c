@@ -21,11 +21,14 @@
 
 /* ----------------------- Platform includes --------------------------------*/
 #include "port.h"
-
+#include "main.h"
 /* ----------------------- Modbus includes ----------------------------------*/
 #include "mb.h"
 #include "mbport.h"
-
+/* ----------------------- Variables ----------------------------------------*/
+extern TIM_HandleTypeDef* modbusTimer;
+uint16_t timerPeriod = 0;
+uint16_t timerCounter = 0;
 /* ----------------------- static functions ---------------------------------*/
 static void prvvTIMERExpiredISR( void );
 
@@ -33,7 +36,8 @@ static void prvvTIMERExpiredISR( void );
 BOOL
 xMBPortTimersInit( USHORT usTim1Timerout50us )
 {
-    return FALSE;
+    timerPeriod = usTim1Timerout50us;
+	return TRUE;
 }
 
 
@@ -41,12 +45,16 @@ inline void
 vMBPortTimersEnable(  )
 {
     /* Enable the timer with the timeout passed to xMBPortTimersInit( ) */
+	timerCounter = 0;
+	HAL_TIM_Base_Start_IT(modbusTimer);
 }
 
 inline void
 vMBPortTimersDisable(  )
 {
     /* Disable any pending timers. */
+	
+  HAL_TIM_Base_Stop_IT(modbusTimer);
 }
 
 /* Create an ISR which is called whenever the timer has expired. This function
@@ -57,4 +65,20 @@ static void prvvTIMERExpiredISR( void )
 {
     ( void )pxMBPortCBTimerExpired(  );
 }
+/* --------------------------------------------------------------------------*/
+void HAL_TIM_PeriodElapsedCallback2(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == modbusTimer->Instance)
+  {
+    timerCounter++;
+    if (timerCounter == timerPeriod)
+    {
+      prvvTIMERExpiredISR();
+    }
+  }
+}
 
+void vMBPortTimersDelay(USHORT  MB_ASCII_TIMEOUT_WAIT_BEFORE_SEND_MS )
+{
+	osDelay(MB_ASCII_TIMEOUT_WAIT_BEFORE_SEND_MS);
+}

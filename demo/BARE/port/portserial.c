@@ -20,7 +20,10 @@
  */
 
 #include "port.h"
-
+#include "main.h"
+#include "stdlib.h"
+#include "string.h"
+#include "stdio.h"
 /* ----------------------- Modbus includes ----------------------------------*/
 #include "mb.h"
 #include "mbport.h"
@@ -28,20 +31,41 @@
 /* ----------------------- static functions ---------------------------------*/
 static void prvvUARTTxReadyISR( void );
 static void prvvUARTRxISR( void );
-
+/* ----------------------- Variables ----------------------------------------*/
+extern UART_HandleTypeDef* modbusUart;
+uint8_t txByte = 0x00;
+uint8_t rxByte = 0x00;
 /* ----------------------- Start implementation -----------------------------*/
-void
-vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
+void vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
 {
     /* If xRXEnable enable serial receive interrupts. If xTxENable enable
      * transmitter empty interrupts.
      */
+	if (xRxEnable == FALSE)
+	{
+		HAL_UART_AbortReceive_IT(modbusUart);
+	}
+	else
+	{
+		HAL_UART_Receive_IT(modbusUart, &rxByte, 1);
+	}
+	if (xTxEnable == FALSE)
+	{
+		HAL_UART_AbortTransmit_IT(modbusUart);
+	}
+	else
+	{
+	if (modbusUart->gState == HAL_UART_STATE_READY)
+	{
+	  prvvUARTTxReadyISR();
+	}
+	}
 }
 
 BOOL
 xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity eParity )
 {
-    return FALSE;
+    return TRUE;
 }
 
 BOOL
@@ -50,6 +74,8 @@ xMBPortSerialPutByte( CHAR ucByte )
     /* Put a byte in the UARTs transmit buffer. This function is called
      * by the protocol stack if pxMBFrameCBTransmitterEmpty( ) has been
      * called. */
+	txByte = ucByte;
+	HAL_UART_Transmit_IT(modbusUart, &txByte, 1);
     return TRUE;
 }
 
@@ -59,7 +85,9 @@ xMBPortSerialGetByte( CHAR * pucByte )
     /* Return the byte in the UARTs receive buffer. This function is called
      * by the protocol stack after pxMBFrameCBByteReceived( ) has been called.
      */
-    return TRUE;
+	*pucByte = rxByte;
+	HAL_UART_Receive_IT(modbusUart, &rxByte, 1);
+	return TRUE;
 }
 
 /* Create an interrupt handler for the transmit buffer empty interrupt
@@ -81,4 +109,22 @@ static void prvvUARTTxReadyISR( void )
 static void prvvUARTRxISR( void )
 {
     pxMBFrameCBByteReceived(  );
+}
+
+
+/* --------------------------------------------------------------------------*/
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if (huart->Instance == modbusUart->Instance)
+  {
+    prvvUARTTxReadyISR();
+  }
+}
+/* --------------------------------------------------------------------------*/
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if (huart->Instance == modbusUart->Instance)
+  {
+    prvvUARTRxISR();
+  }
 }
