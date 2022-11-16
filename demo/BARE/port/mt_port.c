@@ -22,10 +22,12 @@ void EnterCriticalSection() {
 	__disable_irq();
 	taskENTER_CRITICAL();
 	lockCounter++;
+	printf("LockCounter = %D\r\n",lockCounter );
 }
 
 void ExitCriticalSection() {
 	lockCounter--;
+	printf("LockCounter = %D\r\n",lockCounter );
 	if (lockCounter == 0) {
 		__enable_irq();
 		taskEXIT_CRITICAL();
