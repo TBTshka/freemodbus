@@ -33,7 +33,6 @@
 #include <stdio.h>
 /* ----------------------- Platform includes --------------------------------*/
 #include "port.h"
-
 /* ----------------------- Modbus includes ----------------------------------*/
 #include "mb.h"
 #include "mbconfig.h"
@@ -60,7 +59,7 @@
 
 static UCHAR    ucMBAddress;
 static eMBMode  eMBCurrentMode;
-
+extern uint8_t nBytes_recieved, Saved_buffer[64];
 #define TERMO_REGULATOR_MB_ADDR 0x05 
 static enum
 {
@@ -378,8 +377,11 @@ eMBPoll( void )
 					printf("MB message for termoregulator recieved Length is %d, Data is: %X\r\n",usLength,ucRcvAddress);
 					uint16_t i =0;
 					ucMBFrame_copy = ucMBFrame;
+					nBytes_recieved = usLength+2+1;//TR adress+ 2byteCRC
+					Saved_buffer[0]= TERMO_REGULATOR_MB_ADDR;
 					for(i=0;i<usLength+2;i++) {
 						printf(" %X",*ucMBFrame_copy);
+						Saved_buffer[i+1] = *ucMBFrame_copy;
 						ucMBFrame_copy++;
 					}
 					printf("\r\n");
